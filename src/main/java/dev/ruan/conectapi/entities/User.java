@@ -16,16 +16,15 @@ public class User {
     @Column(name = "user_id")
     private UUID userId;
 
+
+    private String name;
+    private String cpf;
     @Column(unique = true)
     private String email;
     private String password;
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "tb_users_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+    @JoinTable(name = "tb_users_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
 
 
@@ -35,6 +34,22 @@ public class User {
 
     public void setUserId(UUID userId) {
         this.userId = userId;
+    }
+
+    public String getNome() {
+        return name;
+    }
+
+    public void setNome(String name) {
+        this.name = name;
+    }
+
+    public String getCpf() {
+        return cpf;
+    }
+
+    public void setCpf(String cpf) {
+        this.cpf = cpf;
     }
 
     public String getEmail() {
