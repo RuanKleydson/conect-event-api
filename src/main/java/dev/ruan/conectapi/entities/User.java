@@ -18,6 +18,7 @@ public class User {
 
 
     private String name;
+    @Column(unique = true)
     private String cpf;
     @Column(unique = true)
     private String email;

@@ -2,6 +2,7 @@ package dev.ruan.conectapi.controller;
 
 import dev.ruan.conectapi.controller.dto.LoginRequest;
 import dev.ruan.conectapi.controller.dto.LoginResponse;
+import dev.ruan.conectapi.entities.Role;
 import dev.ruan.conectapi.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
 import java.time.Instant;
+import java.util.List;
 
 @RestController
 public class TokenController {
@@ -40,9 +42,16 @@ public class TokenController {
         var now = Instant.now();
         var expireIn = 300L;
 
+        var roles = user.get()
+                .getRoles()
+                .stream()
+                .map(Role::getName)
+                .toList();
+
         var claims = JwtClaimsSet.builder()
                 .issuer("mybackend")
                 .subject(user.get().getUserId().toString())
+                .claim("roles", roles)
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(expireIn))
                 .build();
