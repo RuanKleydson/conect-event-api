@@ -6,6 +6,7 @@ import dev.ruan.conectapi.entities.User;
 import dev.ruan.conectapi.repository.SubmissionRepository;
 import dev.ruan.conectapi.repository.UserRepository;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -14,8 +15,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/documents")
@@ -23,6 +30,9 @@ public class DocumentController {
 
     private final SubmissionRepository submissionRepository;
     private final UserRepository userRepository;
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     public DocumentController(SubmissionRepository submissionRepository, UserRepository userRepository) {
         this.submissionRepository = submissionRepository;
@@ -41,16 +51,26 @@ public class DocumentController {
 
     @PostMapping("/submissions")
     public ResponseEntity<Submission> createSubmission(
-            @RequestBody @Valid CreateSubmissionDto dto,
-            @AuthenticationPrincipal Jwt jwt) {
+            @ModelAttribute @Valid CreateSubmissionDto dto,
+            @AuthenticationPrincipal Jwt jwt) throws IOException {
 
         String userId = jwt.getSubject();
-        User usuario = userRepository.findById(java.util.UUID.fromString(userId))
+        User usuario = userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        MultipartFile file = dto.file();
+
+        Path userDir = Paths.get(uploadDir).resolve(userId).toAbsolutePath().normalize();
+        Files.createDirectories(userDir);
+
+        String fileName = "modelo_preenchido.docx";
+        Path filePath = userDir.resolve(fileName);
+
+        file.transferTo(filePath);
+
         Submission submission = new Submission();
-        submission.setFileName(dto.fileName());
-        submission.setFilePath(dto.filePath());
+        submission.setFileName(fileName);
+        submission.setFilePath(filePath.toString());
         submission.setStatus(Submission.Status.PENDING);
         submission.setSubmissionDate(Instant.now());
         submission.setParticipant(usuario);

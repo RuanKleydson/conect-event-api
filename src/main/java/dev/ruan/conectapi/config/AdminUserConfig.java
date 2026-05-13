@@ -33,6 +33,10 @@ public class AdminUserConfig implements CommandLineRunner {
 
         var roleAdmin = roleRepository.findByName(Role.Values.ADMIN.name());
 
+        if (roleAdmin == null) {
+            throw new IllegalStateException("ADMIN role not found in database");
+        }
+
         var userAdmin = userRepository.findByEmail("admin@gmail.com");
 
         userAdmin.ifPresentOrElse(

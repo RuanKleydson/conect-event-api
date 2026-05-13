@@ -21,6 +21,8 @@ RESTful authentication API built with Spring Boot. Developed to deepen knowledge
 
 This project was developed to consolidate concepts of **authentication**, **authorization with RBAC**, and **stateless token-based security** in Spring Boot, using production-ready patterns such as RSA-signed JWTs and BCrypt password hashing.
 
+It also features a **document control and submission system**, allowing authenticated users to download a template, fill it out, upload it, and have it reviewed by an admin.
+
 ---
 
 ## 🔐 Authentication
@@ -70,6 +72,61 @@ Authentication uses RSA-signed JWT tokens. Register a user first, then log in to
 * `401 Unauthorized` — invalid email or password
 
 > All protected endpoints require the `Authorization: Bearer <token>` header.
+
+---
+
+## 📄 Document Control
+
+Endpoints for managing document submissions. A template is provided for users to fill out and upload.
+
+### 🔹 Download Template
+
+`GET /documents/template`
+
+Requires: `ROLE_BASIC` or `ROLE_ADMIN`
+
+Downloads the `modelo.docx` template file.
+
+### 🔹 Submit Document
+
+`POST /documents/submissions`
+
+Requires: `ROLE_BASIC`
+
+Upload the filled template as a multipart file.
+
+```bash
+curl -X POST http://localhost:8080/documents/submissions \
+  -H "Authorization: Bearer <TOKEN>" \
+  -F "file=@modelo_preenchido.docx;type=application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+```
+
+**Response (201 Created):**
+
+```json
+{
+  "id": 1,
+  "fileName": "modelo_preenchido.docx",
+  "filePath": "uploads/<userId>/modelo_preenchido.docx",
+  "status": "PENDING",
+  "submissionDate": "2026-05-13T12:00:00Z"
+}
+```
+
+### 🔹 Approve Submission
+
+`PUT /documents/submissions/{id}/approve`
+
+Requires: `ROLE_ADMIN`
+
+Approves a pending submission by ID.
+
+```bash
+curl -X PUT http://localhost:8080/documents/submissions/1/approve \
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
+```
+
+**Response:** `200 OK` (empty body)
 
 ---
 
@@ -134,9 +191,19 @@ curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"mypassword123"}'
 
-# Use token to access a protected endpoint
-curl -X GET http://localhost:8080/protected \
-  -H "Authorization: Bearer YOUR_TOKEN"
+# Download template (replace YOUR_TOKEN)
+curl -X GET http://localhost:8080/documents/template \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  --output modelo.docx
+
+# Submit filled document
+curl -X POST http://localhost:8080/documents/submissions \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@modelo.docx;type=application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+# Approve submission (requires ADMIN token)
+curl -X PUT http://localhost:8080/documents/submissions/1/approve \
+  -H "Authorization: Bearer ADMIN_TOKEN"
 ```
 
 ### Stop
@@ -151,11 +218,28 @@ docker compose -f docker/docker-compose.yml down
 
 ```
 src/main/java/dev/ruan/conectapi/
-├── config/           # Security config & admin bootstrap
-├── controller/       # REST endpoints (Auth, User)
-│   └── dto/          # Request/Response records
-├── entities/         # JPA entities (User, Role)
-├── repository/       # Spring Data repositories
+├── config/                 # Security config & admin bootstrap
+│   ├── AdminUserConfig.java
+│   ├── RsaKeysConfig.java
+│   └── SecurityConfig.java
+├── controller/             # REST endpoints
+│   ├── DocumentController.java   # Template download & submission upload
+│   ├── SubmissionController.java # Submission approval
+│   ├── TokenController.java      # JWT generation (login)
+│   ├── UserController.java       # User registration
+│   └── dto/                      # Request/Response records
+│       ├── CreateSubmissionDto.java
+│       ├── CreateUserDto.java
+│       ├── LoginRequest.java
+│       └── LoginResponse.java
+├── entities/               # JPA entities
+│   ├── Role.java
+│   ├── Submission.java
+│   └── User.java
+├── repository/             # Spring Data repositories
+│   ├── RoleRepository.java
+│   ├── SubmissionRepository.java
+│   └── UserRepository.java
 └── ConectapiApplication.java
 ```
 

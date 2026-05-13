@@ -1,12 +1,10 @@
 package dev.ruan.conectapi.controller.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.web.multipart.MultipartFile;
 
 public record CreateSubmissionDto(
-        @NotBlank(message = "File name is required")
-        String fileName,
-
-        @NotBlank(message = "File path is required")
-        String filePath
+        @NotNull(message = "File is required")
+        MultipartFile file
 ) {
 }
